@@ -31,6 +31,7 @@ name = "ai_basics"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "dioxus-charts",
 ]
 
 [[package]]
@@ -802,6 +803,16 @@ dependencies = [
  "dioxus-web",
  "manganis",
  "warnings",
+]
+
+[[package]]
+name = "dioxus-charts"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c862cacf3989713716763def8a4b3b1ab366f691cac5bd64187aec7cb27e61f"
+dependencies = [
+ "dioxus",
+ "log",
 ]
 
 [[package]]
