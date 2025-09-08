@@ -4,6 +4,7 @@ use views::{HomePage, SimulatedAnnealingPage, RouteOutlet};
 
 mod components;
 mod views;
+mod utils;
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 

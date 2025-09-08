@@ -1,8 +1,10 @@
 use dioxus::prelude::*;
 
+use crate::utils::FIELD_SIZE;
+
 #[derive(Props, PartialEq, Clone)]
 pub struct FieldProps {
-    field: Vec<Vec<bool>>
+    field: [[bool; FIELD_SIZE]; FIELD_SIZE]
 }
 
 #[component]
@@ -14,7 +16,7 @@ pub fn Field(props: FieldProps) -> Element {
 
     rsx! {
         div {
-            class: "grid grid-cols-{columns_amount} grid-rows-{props.field.len()} gap-1",
+            class: "grid grid-cols-20 grid-rows-20 gap-1",
             for i in (0..props.field.len()) {
                 for j in (0..columns_amount) {
                     div { 
