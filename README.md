@@ -1,6 +1,3 @@
-# ai_basics
-Source code for lab classes for AI basics course in BSTU after V.G. Shukhov
-
 # Development
 
 Your new jumpstart project includes basic organization with an organized `assets` folder and a `components` folder.
@@ -10,10 +7,14 @@ If you chose to develop with the router feature, you will also have a `views` fo
 project/
 ├─ assets/ # Any assets that are used by the app should be placed here
 ├─ src/
-│  ├─ main.rs # The entrypoint for the app.
+│  ├─ main.rs # The entrypoint for the app. It also defines the routes for the app.
 │  ├─ components/
 │  │  ├─ mod.rs # Defines the components module
 │  │  ├─ hero.rs # The Hero component for use in the home page
+│  ├─ views/ # The views each route will render in the app.
+│  │  ├─ mod.rs # Defines the module for the views route and re-exports the components for each route
+│  │  ├─ blog.rs # The component that will render at the /blog/:id route
+│  │  ├─ home.rs # The component that will render at the / route
 ├─ Cargo.toml # The Cargo.toml file defines the dependencies and feature flags for your project
 ```
 
