@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use views::{HomePage, SimulatedAnnealingPage, RouteOutlet};
+use views::{HomePage, SimulatedAnnealingPage, RouteOutlet, ART1Page};
 
 mod components;
 mod views;
@@ -14,6 +14,8 @@ enum Route {
         HomePage {},
         #[route("/simulated-annealing")]
         SimulatedAnnealingPage {},
+        #[route("/art1")]
+        ART1Page,
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");

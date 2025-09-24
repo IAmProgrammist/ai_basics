@@ -19,6 +19,14 @@ pub fn HomePage() -> Element {
                     redirect: Route::SimulatedAnnealingPage {  }
                 }
             }
+            div {
+                class: "flex flex-col gap-2",
+                LabCard {
+                    number: 2,
+                    sub_title: "ART1",
+                    redirect: Route::ART1Page {  }
+                }
+            }
         }
     }
 }
