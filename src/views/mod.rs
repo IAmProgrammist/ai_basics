@@ -9,10 +9,10 @@
 //! a common wrapper around all child routes.
 
 mod home;
-pub use home::Home;
+pub use home::HomePage;
 
-mod blog;
-pub use blog::Blog;
+mod route_outlet;
+pub use route_outlet::RouteOutlet;
 
-mod navbar;
-pub use navbar::Navbar;
+mod simulated_annealing;
+pub use simulated_annealing::SimulatedAnnealingPage;

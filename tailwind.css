@@ -1,3 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+body {
+    @apply dark:bg-gray-800 bg-gray-100
+}
+
+#main {
+    @apply max-w-2xl px-4 mx-auto flex gap-5 flex-col
+}
