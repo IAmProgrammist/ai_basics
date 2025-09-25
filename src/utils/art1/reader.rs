@@ -21,8 +21,8 @@ pub struct FileART1DatabaseReader {
 }
 
 impl FileART1DatabaseReader {
-    fn new(mut self, file_path: &String) {
-        self.file_path = file_path.clone();
+    pub fn new(file_path: &String) -> FileART1DatabaseReader {
+        FileART1DatabaseReader {file_path: file_path.clone()}
     }
 }
 

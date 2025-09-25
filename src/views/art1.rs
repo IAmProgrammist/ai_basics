@@ -1,11 +1,15 @@
+use std::thread::spawn;
+
 use dioxus::prelude::*;
 
-use crate::{components::{GoHome, INPUT_CLASSES}, utils::ART1Config};
+use crate::{components::{GoHome, BUTTON_CLASSES, INPUT_CLASSES}, utils::{art1, ART1Config, FileART1DatabaseReader, IART1DatabaseReader}};
 
 #[component]
 pub fn ART1Page() -> Element {
     let mut input_file_path = use_signal(|| "".to_string());
-    
+    let mut max_clusters = use_signal(|| "".to_string());
+    let mut beta_coef = use_signal(|| "".to_string());
+    let mut attention_coef = use_signal(|| "".to_string());
 
     rsx! {
         div {
@@ -39,6 +43,66 @@ pub fn ART1Page() -> Element {
                         }
                     }
                 }
+            }
+            input { 
+                class: INPUT_CLASSES, 
+                placeholder: "Максимальное количество кластеров",
+                type: "number",
+                min: "1",
+                value: "{max_clusters}",
+                oninput: move |event| max_clusters.set(event.value())
+            }
+            input { 
+                class: INPUT_CLASSES, 
+                placeholder: "Бета-параметр",
+                type: "number",
+                min: "0.0",
+                step: "0.001",
+                value: "{beta_coef}",
+                oninput: move |event| beta_coef.set(event.value())
+            }
+            input { 
+                class: INPUT_CLASSES, 
+                placeholder: "Параметр внимательности",
+                type: "number",
+                min: "0",
+                max: "1",
+                step: "0.001",
+                value: "{attention_coef}",
+                oninput: move |event| attention_coef.set(event.value())
+            }
+            button {
+                class: BUTTON_CLASSES,
+                onclick: move |_| {
+                    let param_input_file = input_file_path();
+
+                    let db = FileART1DatabaseReader::new(
+                        &param_input_file
+                    ).read().unwrap();
+
+                    let config = ART1Config {
+                        max_clusters: max_clusters().parse::<usize>().unwrap(),
+                        beta: beta_coef().parse::<f64>().unwrap(),
+                        attention: attention_coef().parse::<f64>().unwrap()
+                    };
+
+                    let clusters = art1(&db, &config);
+                    // let max_temp = max_temp().parse::<f64>().unwrap();
+                    // let min_temp = min_temp().parse::<f64>().unwrap();
+                    // let lower_coef = lower_coef().parse::<f64>().unwrap();
+                    // let queen_amount = queen_amount().parse::<usize>().unwrap();
+                    // let steps_amount = steps_amount().parse::<usize>().unwrap();
+                    
+                    // let result = simulated_annealing(max_temp, min_temp, lower_coef, queen_amount, steps_amount);
+                    // field.set(result.best_field);
+                    // bad_decisions.set(result.bad_decisions);
+                    // energy.set(result.energy);
+                    // temperatures.set(result.temperatures);
+                },
+                "Запустить кластеризацию"
+            }
+            hr { 
+                class: "text-gray-900 dark:text-white"
             }
         }
     }
