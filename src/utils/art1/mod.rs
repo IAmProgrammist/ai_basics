@@ -9,3 +9,6 @@ pub use clusters::*;
 
 mod art1;
 pub use art1::*;
+
+mod config;
+pub use config::*;

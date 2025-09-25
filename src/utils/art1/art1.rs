@@ -1,12 +1,6 @@
 use std::error::Error;
 
-use crate::utils::{ART1Clusters, ART1Database};
-
-pub struct ART1Config {
-    pub max_clusters: usize,
-    pub attention: f64,
-    pub beta: f64,
-}
+use crate::utils::{ART1Clusters, ART1Database, ART1Config};
 
 pub fn art1(database: &ART1Database, config: &ART1Config) -> Result<ART1Clusters, Box<dyn Error>> {
     let mut art1_clusters = ART1Clusters { clusters: vec![] };
@@ -18,22 +12,29 @@ pub fn art1(database: &ART1Database, config: &ART1Config) -> Result<ART1Clusters
     // Создаём первый кластер с единственным вектором-прототипом -- первым элементом из списка.
     create_cluster(config, &mut art1_clusters, database.dataset[0])?;
 
-    // Выполнить кластеризацию
+    // Инициализируем кластеры
     for database_element in database.dataset.iter() {
         // Найти подходящий кластер
-        let op_cluster_index = find_fitting_cluster(database, config, &art1_clusters, *database_element)?;
-        match op_cluster_index {
+        match find_fitting_cluster(database, config, &art1_clusters, *database_element)? {
             Some(cluster_index) => {
-                // Если кластер найден, то добавляем в него элемент
-                push_cluster(&mut art1_clusters, cluster_index, *database_element)?;
+                // Если кластер найден, то модифицируем вектор-прототип
+                art1_clusters.clusters[cluster_index][0] &= *database_element;
             },
             None => {
                 // Иначе, пытаемся создать новый кластер
-                match create_cluster(&config, &mut art1_clusters, *database_element) {
-                    Err(error) => eprintln!("{error}"),
-                    Ok(_) => {}
+                if let Err(error) = create_cluster(&config, &mut art1_clusters, *database_element) {
+                    eprintln!("{error}")
                 }
             }
+        }
+    }
+
+    // Распределяем элементы базы данных по полученным кластерам
+    for database_element in database.dataset.iter() {
+        // Найти подходящий кластер
+        if let Some(cluster_index) = find_fitting_cluster(database, config, &art1_clusters, *database_element)? {
+            // Если кластер найден, то модифицируем вектор-прототип
+            push_cluster(&mut art1_clusters, cluster_index, *database_element)?;
         }
     }
 

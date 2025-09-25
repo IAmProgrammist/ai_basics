@@ -192,11 +192,17 @@
   .static {
     position: static;
   }
+  .contents {
+    display: contents;
+  }
   .flex {
     display: flex;
   }
   .grid {
     display: grid;
+  }
+  .hidden {
+    display: none;
   }
   .min-h-6 {
     min-height: calc(var(--spacing) * 6);
