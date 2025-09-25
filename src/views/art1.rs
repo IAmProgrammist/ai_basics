@@ -87,17 +87,6 @@ pub fn ART1Page() -> Element {
                     };
 
                     let clusters = art1(&db, &config);
-                    // let max_temp = max_temp().parse::<f64>().unwrap();
-                    // let min_temp = min_temp().parse::<f64>().unwrap();
-                    // let lower_coef = lower_coef().parse::<f64>().unwrap();
-                    // let queen_amount = queen_amount().parse::<usize>().unwrap();
-                    // let steps_amount = steps_amount().parse::<usize>().unwrap();
-                    
-                    // let result = simulated_annealing(max_temp, min_temp, lower_coef, queen_amount, steps_amount);
-                    // field.set(result.best_field);
-                    // bad_decisions.set(result.bad_decisions);
-                    // energy.set(result.energy);
-                    // temperatures.set(result.temperatures);
                 },
                 "Запустить кластеризацию"
             }
