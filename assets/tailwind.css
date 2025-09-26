@@ -228,6 +228,9 @@
   .items-center {
     align-items: center;
   }
+  .justify-between {
+    justify-content: space-between;
+  }
   .gap-1 {
     gap: calc(var(--spacing) * 1);
   }

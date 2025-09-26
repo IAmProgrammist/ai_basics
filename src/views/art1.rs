@@ -1,8 +1,8 @@
-use std::thread::spawn;
+use std::{error::Error, thread::spawn};
 
-use dioxus::prelude::*;
+use dioxus::{prelude::*};
 
-use crate::{components::{GoHome, BUTTON_CLASSES, INPUT_CLASSES}, utils::{art1, ART1Config, FileART1DatabaseReader, IART1DatabaseReader}};
+use crate::{components::{GoHome, TabList, BUTTON_CLASSES, INPUT_CLASSES}, utils::{art1, ART1Config, FileART1DatabaseReader, IART1DatabaseReader}};
 
 #[component]
 pub fn ART1Page() -> Element {
@@ -10,6 +10,7 @@ pub fn ART1Page() -> Element {
     let mut max_clusters = use_signal(|| "".to_string());
     let mut beta_coef = use_signal(|| "".to_string());
     let mut attention_coef = use_signal(|| "".to_string());
+    let mut clusters_page = use_signal(|| 0 as usize);
 
     rsx! {
         div {
@@ -74,24 +75,40 @@ pub fn ART1Page() -> Element {
             button {
                 class: BUTTON_CLASSES,
                 onclick: move |_| {
-                    let param_input_file = input_file_path();
+                    let inner = move || -> Result<(), Box<dyn Error>> {
+                        let param_input_file = input_file_path();
 
-                    let db = FileART1DatabaseReader::new(
-                        &param_input_file
-                    ).read().unwrap();
+                        let db = FileART1DatabaseReader::new(
+                            &param_input_file
+                        ).read()?;
 
-                    let config = ART1Config {
-                        max_clusters: max_clusters().parse::<usize>().unwrap(),
-                        beta: beta_coef().parse::<f64>().unwrap(),
-                        attention: attention_coef().parse::<f64>().unwrap()
+                        let config = ART1Config {
+                            max_clusters: max_clusters().parse::<usize>()?,
+                            beta: beta_coef().parse::<f64>()?,
+                            attention: attention_coef().parse::<f64>()?
+                        };
+
+                        let clusters = art1(&db, &config);
+                      
+                        Ok(())
                     };
 
-                    let clusters = art1(&db, &config);
+                    match inner() {
+                        Ok(_) => {},
+                        Err(_) => {}
+                    }
                 },
                 "Запустить кластеризацию"
             }
             hr { 
                 class: "text-gray-900 dark:text-white"
+            }
+            TabList {
+                page: clusters_page(),
+                pages: vec!["Page A".to_string(), "Page B".to_string(), "Page C".to_string()],
+                on_page_changes: move |new_page: usize| {
+                    clusters_page() = new_page;
+                }
             }
         }
     }
