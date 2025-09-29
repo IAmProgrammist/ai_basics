@@ -6,12 +6,13 @@ use crate::components::BUTTON_CLASSES;
 pub struct TabListProps {
     page: usize,
     pages: Vec<String>,
-    on_page_changes: impl Fn(usize) -> ()
+    on_page_changes: Callback<usize>
 }
 
 #[component]
 pub fn TabList(props: TabListProps) -> Element {
     let pages_clone = props.pages.clone();
+    let on_page_changes_clone = props.on_page_changes.clone();
 
     rsx! {
         div {
@@ -19,18 +20,39 @@ pub fn TabList(props: TabListProps) -> Element {
             div {
                 class: BUTTON_CLASSES,
                 onclick: move |_event| {
-                    (props.on_page_changes)((props.pages.len() - 1) % props.pages.len())
+                    if props.pages.len() == 0 {
+                        return;
+                    }
+
+                    if props.page == 0 {
+                        (props.on_page_changes)(props.pages.len() - 1);
+                        return;
+                    }
+
+                    (props.on_page_changes)((props.page - 1) % props.pages.len())
                 },
                 "Пред."
             },
-            div {
-                class: "text-lg text-gray-900 dark:text-white text-lg font-bold",
-                "{props.pages[props.page % props.pages.len()]}"
+            if props.pages.len() == 0 { 
+                div {
+                    class: "text-lg text-gray-900 dark:text-white text-lg font-bold",
+                    "Страниц нет :("
+                }
+            } else 
+            {
+                div {
+                    class: "text-lg text-gray-900 dark:text-white text-lg font-bold",
+                    "{props.pages[props.page % props.pages.len()]}"
+                }
             },
             div {
                 class: BUTTON_CLASSES,
                 onclick: move |_event| {
-                    (props.on_page_changes)((pages_clone.len() + 1) % pages_clone.len())
+                    if pages_clone.len() == 0 {
+                        return;
+                    }
+
+                    (on_page_changes_clone)((props.page + 1) % pages_clone.len())
                 },
                 "След."
             }

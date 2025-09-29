@@ -24,3 +24,6 @@ pub use art1::*;
 
 mod tab_list;
 pub use tab_list::*;
+
+mod pagination;
+pub use pagination::*;

@@ -36,11 +36,15 @@ impl IART1DatabaseReader for FileART1DatabaseReader {
         // Из первой строчки мы должны определить количество свойств и считать первый элемент
         let mut line = String::new();
         let _ = reader.read_line(&mut line);
-        result_database.dimension = line.len();
-        result_database.dataset.push(u64::from_str_radix(&line, 2)?);
+        result_database.dimension = line.trim().len();
+        result_database.dataset.push(u64::from_str_radix(line.trim(), 2)?);
 
         for line in reader.lines() {
-            result_database.dataset.push(u64::from_str_radix(&line?, 2)?);    
+            let line_moved = line?;
+            if line_moved.trim().len() == 0 {
+                break;
+            }
+            result_database.dataset.push(u64::from_str_radix(line_moved.trim(), 2)?);    
         }
 
         Ok(result_database)

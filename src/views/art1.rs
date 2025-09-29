@@ -2,7 +2,7 @@ use std::{error::Error, thread::spawn};
 
 use dioxus::{prelude::*};
 
-use crate::{components::{GoHome, TabList, BUTTON_CLASSES, INPUT_CLASSES}, utils::{art1, ART1Config, FileART1DatabaseReader, IART1DatabaseReader}};
+use crate::{components::{Cluster, GoHome, TabList, BUTTON_CLASSES, INPUT_CLASSES}, utils::{art1, ART1Clusters, ART1Config, FileART1DatabaseReader, IART1DatabaseReader}};
 
 #[component]
 pub fn ART1Page() -> Element {
@@ -11,6 +11,9 @@ pub fn ART1Page() -> Element {
     let mut beta_coef = use_signal(|| "".to_string());
     let mut attention_coef = use_signal(|| "".to_string());
     let mut clusters_page = use_signal(|| 0 as usize);
+
+    let mut clusters = use_signal(|| ART1Clusters {clusters: vec![]});
+    let mut cluster_dimension = use_signal(|| 0);
 
     rsx! {
         div {
@@ -75,7 +78,7 @@ pub fn ART1Page() -> Element {
             button {
                 class: BUTTON_CLASSES,
                 onclick: move |_| {
-                    let inner = move || -> Result<(), Box<dyn Error>> {
+                    let mut inner = move || -> Result<(), Box<dyn Error>> {
                         let param_input_file = input_file_path();
 
                         let db = FileART1DatabaseReader::new(
@@ -88,14 +91,19 @@ pub fn ART1Page() -> Element {
                             attention: attention_coef().parse::<f64>()?
                         };
 
-                        let clusters = art1(&db, &config);
+                        let out = art1(&db, &config)?;
                       
+                        clusters.set(out);
+                        cluster_dimension.set(db.dimension);
+
                         Ok(())
                     };
 
                     match inner() {
                         Ok(_) => {},
-                        Err(_) => {}
+                        Err(e) => {
+                            println!("{}", e)
+                        }
                     }
                 },
                 "Запустить кластеризацию"
@@ -105,10 +113,17 @@ pub fn ART1Page() -> Element {
             }
             TabList {
                 page: clusters_page(),
-                pages: vec!["Page A".to_string(), "Page B".to_string(), "Page C".to_string()],
+                pages: clusters.read().clusters.iter().enumerate().map(|(number, _it)| {
+                    let number = number + 1;
+                    format!("Кластер {number}")
+                }).collect(),
                 on_page_changes: move |new_page: usize| {
-                    clusters_page() = new_page;
+                    clusters_page.set(new_page);
                 }
+            }
+            Cluster {
+                dimension: *cluster_dimension.read(),
+                cluster: if clusters_page() < clusters.read().clusters.len() {clusters.read().clusters[clusters_page()]} else {vec![]}
             }
         }
     }
