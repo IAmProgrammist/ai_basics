@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::components::Pagination;
+
 #[derive(Props, PartialEq, Clone)]
 pub struct ClusterProps {
     cluster: Vec<u64>,
@@ -16,11 +18,17 @@ pub fn Cluster(props: ClusterProps) -> Element {
                 "Вектор-прототип"
             }
             ClusterElement {
-                cluster_element: props.cluster[0],
+                cluster_element: if props.cluster.len() == 0 {0} else {props.cluster[0]},
                 dimension: props.dimension
             }
             hr { 
                 class: "text-gray-900 dark:text-white"
+            }
+            for cluster_element_index in 1..props.cluster.len() {
+                ClusterElement {
+                    cluster_element: props.cluster[cluster_element_index],
+                    dimension: props.dimension
+                }
             }
         }
     }

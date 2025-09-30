@@ -95,6 +95,7 @@ pub fn ART1Page() -> Element {
                       
                         clusters.set(out);
                         cluster_dimension.set(db.dimension);
+                        clusters_page.set(0);
 
                         Ok(())
                     };
@@ -123,7 +124,7 @@ pub fn ART1Page() -> Element {
             }
             Cluster {
                 dimension: *cluster_dimension.read(),
-                cluster: if clusters_page() < clusters.read().clusters.len() {clusters.read().clusters[clusters_page()]} else {vec![]}
+                cluster: if clusters_page() < clusters.read().clusters.len() {clusters.read().clusters[clusters_page()].clone()} else {vec![]}
             }
         }
     }

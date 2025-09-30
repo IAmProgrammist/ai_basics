@@ -150,5 +150,5 @@ fn check_attention(
     prototype: u64,
     value: u64,
 ) -> bool {
-    ((prototype & value).count_ones() as f64 / value.count_ones() as f64) < config.attention
+    ((prototype & value).count_ones() as f64 / value.count_ones() as f64) > config.attention
 }
