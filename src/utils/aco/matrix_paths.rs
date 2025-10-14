@@ -4,36 +4,41 @@ use rand::Rng;
 
 use crate::utils::ACOPaths;
 
+
+#[derive(Clone)]
+pub struct Point2 {
+    x: f64, y: f64
+}
+
+impl Point2 {
+    pub fn dist(&self, other: &Point2) -> f64 {
+        (self.x - other.x).powf(2.) + (self.y - other.y).powf(2.)
+    }
+}
+
 pub struct MatrixACOPaths {
     feromone: Vec<Vec<f64>>,
-    weights: Vec<Vec<f64>>
+    points: Vec<Point2>
 }
+
+const DISTR_X: f64 = 10.;
+const DISTR_Y: f64 = 10.;
 
 impl MatrixACOPaths {
     pub fn new(points_amount: usize) -> MatrixACOPaths {
         let mut rng = rand::rng();
 
-        let mut weights: Vec<Vec<f64>> = vec![vec![0.; points_amount]; points_amount];
-        for i in 0..points_amount {
-            for j in 0..points_amount {
-                if i == j {
-                    continue;
-                }
-
-                weights[i][j] = rng.random_range(1.0..5.0)
-            }
-        }
-        
-        MatrixACOPaths {
-            feromone: vec![vec![0.; points_amount]; points_amount],
-            weights,
+        MatrixACOPaths {             
+            feromone: vec![vec![0.; points_amount]; points_amount], 
+            points: (0..points_amount).step_by(1).into_iter()
+                .map(|_| Point2 {x: rng.random_range(-DISTR_X..DISTR_X), y: rng.random_range(-DISTR_Y..DISTR_Y)}).collect()
         }
     }
 }
 
 impl ACOPaths for MatrixACOPaths {
     fn len(&self) -> usize {
-        self.weights.len()
+        self.points.len()
     }
 
     fn get_distance(&self, from: usize, to: usize) -> Result<f64, Box<dyn Error>> {
@@ -41,7 +46,7 @@ impl ACOPaths for MatrixACOPaths {
             return Err("Out of bounds".into());
         }
 
-        return Ok(self.weights[from][to])
+        return Ok(self.points[from].dist(&self.points[to]))
     }
 
     fn get_feromone_intensity(&self, from: usize, to: usize) -> Result<f64, Box<dyn Error>> {
