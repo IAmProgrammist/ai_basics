@@ -27,6 +27,14 @@ pub fn HomePage() -> Element {
                     redirect: Route::ART1Page {  }
                 }
             }
+            div {
+                class: "flex flex-col gap-2",
+                LabCard {
+                    number: 3,
+                    sub_title: "Муравьиный алгоритм",
+                    redirect: Route::ACOPage {  }
+                }
+            }
         }
     }
 }

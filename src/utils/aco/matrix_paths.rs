@@ -30,7 +30,7 @@ impl MatrixACOPaths {
         let mut rng = rand::rng();
 
         MatrixACOPaths {             
-            feromone: vec![vec![0.; points_amount]; points_amount], 
+            feromone: vec![vec![1. / points_amount as f64; points_amount]; points_amount], 
             points: (0..points_amount).step_by(1).into_iter()
                 .map(|_| Point2 {x: rng.random_range(-DISTR_X..DISTR_X), y: rng.random_range(-DISTR_Y..DISTR_Y)}).collect(),
             fresh: true
