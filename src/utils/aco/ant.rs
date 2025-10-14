@@ -1,6 +1,6 @@
 #[derive(Clone)]
 pub struct Ant {
-    visited: Vec<usize>
+    pub visited: Vec<usize>
 }
 
 impl Ant {

@@ -18,7 +18,8 @@ impl Point2 {
 
 pub struct MatrixACOPaths {
     feromone: Vec<Vec<f64>>,
-    points: Vec<Point2>
+    points: Vec<Point2>,
+    fresh: bool
 }
 
 const DISTR_X: f64 = 10.;
@@ -31,7 +32,8 @@ impl MatrixACOPaths {
         MatrixACOPaths {             
             feromone: vec![vec![0.; points_amount]; points_amount], 
             points: (0..points_amount).step_by(1).into_iter()
-                .map(|_| Point2 {x: rng.random_range(-DISTR_X..DISTR_X), y: rng.random_range(-DISTR_Y..DISTR_Y)}).collect()
+                .map(|_| Point2 {x: rng.random_range(-DISTR_X..DISTR_X), y: rng.random_range(-DISTR_Y..DISTR_Y)}).collect(),
+            fresh: true
         }
     }
 }
@@ -63,6 +65,11 @@ impl ACOPaths for MatrixACOPaths {
         }
 
         self.feromone[from][to] = value;
+        self.fresh = false;
         Ok(())
+    }
+
+    fn is_fresh(&self) -> bool {
+        self.fresh
     }
 }

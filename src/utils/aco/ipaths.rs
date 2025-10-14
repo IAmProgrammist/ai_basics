@@ -1,6 +1,6 @@
 use std::error::Error;
 
-pub trait ACOPaths {
+pub trait ACOPaths: Send + Sync {
     // Возвращает количество точек для карты
     fn len(&self) -> usize;
 
@@ -12,4 +12,7 @@ pub trait ACOPaths {
 
     // Устанавливает количество феромона между точками
     fn set_feromone_intensity(&mut self, value: f64, from: usize, to: usize) -> Result<(), Box<dyn Error>>;
+
+    // Возвращает, нет ли на поле феромона
+    fn is_fresh(&self) -> bool;
 }
