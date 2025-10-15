@@ -2,7 +2,7 @@ use std::{error::Error, ops::Range, sync::Arc, thread::sleep, time::{Duration, I
 
 use dioxus::{prelude::*};
 
-use crate::{components::{GoHome, InputLegend, BUTTON_CLASSES, INPUT_CLASSES}, utils::{aco, parse_range, ACOConfig, ACOPaths, MatrixACOPaths}};
+use crate::{components::{GoHome, InputLegend, MatrixDrawer, BUTTON_CLASSES, INPUT_CLASSES}, utils::{aco, parse_range, ACOConfig, ACOPaths, MatrixACOPaths}};
 
 #[component]
 pub fn ACOPage() -> Element {
@@ -18,11 +18,13 @@ pub fn ACOPage() -> Element {
     let mut range_x_right = use_signal(|| "10".to_string());
     let mut range_y_bottom = use_signal(|| "-10".to_string());
     let mut range_y_top = use_signal(|| "10".to_string());
-    let mut points_amount = use_signal(|| "5".to_string());
-    let mut matrix: Signal<MatrixACOPaths> = use_signal(|| MatrixACOPaths::new(5, None, None));
+    let mut points_amount = use_signal(|| "10".to_string());
+    let mut matrix: Signal<MatrixACOPaths> = use_signal(|| MatrixACOPaths::new(10, None, None));
 
     let mut simulation_threshold = use_signal(|| "500".to_string());
     let mut simulation_running = use_signal(|| false);
+
+    let mut force_reload = use_signal(|| 0);
 
     rsx! {
         div {
@@ -191,6 +193,7 @@ pub fn ACOPage() -> Element {
                         let points_amount = points_amount.read().parse::<usize>()?;
 
                         matrix.set(MatrixACOPaths::new(points_amount, range_x, range_y));
+                        force_reload.set(force_reload.clone() + 1);
 
                         Ok(())
                     };
@@ -213,6 +216,7 @@ pub fn ACOPage() -> Element {
                         let mut matrix_copy = matrix.read().clone();
                         matrix_copy.clean_feromone();
                         matrix.set(matrix_copy);
+                        force_reload.set(force_reload.clone() + 1);
                         Ok(())
                     };
 
@@ -280,18 +284,10 @@ pub fn ACOPage() -> Element {
                             let start_time = Instant::now();
                             let _ = aco(&config, &mut edit_matrix_arc).await;
 
-                            for i in 0..matrix.read().len() {
-                                for j in 0..matrix.read().len() {
-                                    print!("{:.2} ", matrix.read().get_feromone_intensity(i, j).unwrap_or(0.));
-                                }
-                                println!("");
-                            }
-                            println!("");
-                            println!("");
-
                             let mut copy_paste_matrix = matrix.read().clone();
                             copy_paste_matrix = copy_paste_matrix.copy_fresh_and_feromone_from_trait(&mut edit_matrix_arc);
                             matrix.set(copy_paste_matrix);
+                            force_reload.set(force_reload().clone() + 1);
 
                             let ellapsed = start_time.elapsed();
                             let ellapsed = ellapsed.as_millis();
@@ -307,6 +303,10 @@ pub fn ACOPage() -> Element {
             }
             hr { 
                 class: "text-gray-900 dark:text-white"
+            }
+            MatrixDrawer {
+                matrix: Box::new(matrix.read().clone()),
+                id: force_reload.read().clone()
             }
         }
     }

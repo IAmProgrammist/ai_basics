@@ -5,9 +5,10 @@ use rand::{distr::uniform::SampleRange, Rng};
 use crate::utils::ACOPaths;
 
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Point2 {
-    x: f64, y: f64
+    pub x: f64, 
+    pub y: f64
 }
 
 impl Point2 {
@@ -16,10 +17,10 @@ impl Point2 {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct MatrixACOPaths {
     feromone: Vec<Vec<f64>>,
-    points: Vec<Point2>,
+    pub points: Vec<Point2>,
     fresh: bool
 }
 
