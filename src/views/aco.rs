@@ -1,12 +1,12 @@
-use std::{error::Error, ops::Range, thread::sleep, time::{Duration, Instant}};
+use std::{error::Error, ops::Range, sync::Arc, thread::sleep, time::{Duration, Instant}};
 
 use dioxus::{prelude::*};
 
-use crate::{components::{GoHome, InputLegend, BUTTON_CLASSES, INPUT_CLASSES}, utils::{parse_range, ACOConfig, MatrixACOPaths}};
+use crate::{components::{GoHome, InputLegend, BUTTON_CLASSES, INPUT_CLASSES}, utils::{aco, parse_range, ACOConfig, ACOPaths, MatrixACOPaths}};
 
 #[component]
 pub fn ACOPage() -> Element {
-    let mut ants = use_signal(|| "10".to_string());
+    let mut ants = use_signal(|| "3".to_string());
     let mut feromone_weight = use_signal(|| "1".to_string());
     let mut heuristic_coefficient = use_signal(|| "3.5".to_string());
     let mut evaporation_coefficient = use_signal(|| "0.2".to_string());
@@ -18,10 +18,10 @@ pub fn ACOPage() -> Element {
     let mut range_x_right = use_signal(|| "10".to_string());
     let mut range_y_bottom = use_signal(|| "-10".to_string());
     let mut range_y_top = use_signal(|| "10".to_string());
-    let mut points_amount = use_signal(|| "10".to_string());
+    let mut points_amount = use_signal(|| "5".to_string());
     let mut matrix: Signal<MatrixACOPaths> = use_signal(|| MatrixACOPaths::new(5, None, None));
 
-    let mut simulation_threshold = use_signal(|| "100".to_string());
+    let mut simulation_threshold = use_signal(|| "500".to_string());
     let mut simulation_running = use_signal(|| false);
 
     rsx! {
@@ -272,11 +272,26 @@ pub fn ACOPage() -> Element {
                         let config = config_arg.unwrap();
 
                         simulation_running.set(true);
-                        let matrix_copy = matrix.read().clone();
+
+                        let edit_matrix = matrix.read().clone();
+                        let mut edit_matrix_arc: Arc<dyn ACOPaths> = Arc::new(edit_matrix);
+                        
                         while *simulation_running.read() {
                             let start_time = Instant::now();
-                            
-                            println!("I AM JORKINGOFFER");
+                            let _ = aco(&config, &mut edit_matrix_arc).await;
+
+                            for i in 0..matrix.read().len() {
+                                for j in 0..matrix.read().len() {
+                                    print!("{:.2} ", matrix.read().get_feromone_intensity(i, j).unwrap_or(0.));
+                                }
+                                println!("");
+                            }
+                            println!("");
+                            println!("");
+
+                            let mut copy_paste_matrix = matrix.read().clone();
+                            copy_paste_matrix = copy_paste_matrix.copy_fresh_and_feromone_from_trait(&mut edit_matrix_arc);
+                            matrix.set(copy_paste_matrix);
 
                             let ellapsed = start_time.elapsed();
                             let ellapsed = ellapsed.as_millis();

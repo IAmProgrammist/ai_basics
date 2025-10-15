@@ -1,4 +1,4 @@
-use std::{error::Error, ops::Range};
+use std::{error::Error, ops::Range, sync::Arc};
 
 use rand::{distr::uniform::SampleRange, Rng};
 
@@ -39,6 +39,24 @@ impl MatrixACOPaths {
                 .map(|_| Point2 {x: rng.random_range(x_range.clone()), y: rng.random_range(y_range.clone())}).collect(),
             fresh: true
         }
+    }
+
+    pub fn copy_fresh_and_feromone_from_trait(mut self, paths: & mut Arc<dyn ACOPaths>) -> MatrixACOPaths {
+        let points_amount = paths.len();
+
+        if points_amount != self.len() {
+            return self
+        }
+
+        self.fresh = paths.is_fresh();
+
+        for i in 0..points_amount {
+            for j in 0..points_amount {
+                self.set_feromone_intensity(paths.get_feromone_intensity(i, j).unwrap_or(0.), i, j).unwrap()
+            }
+        }
+
+        self
     }
 
     pub fn clean_feromone(&mut self) {

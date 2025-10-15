@@ -1,42 +1,12 @@
-use std::{error::Error, sync::{mpsc::channel, Arc, RwLock, RwLockReadGuard}, vec};
+use std::{error::Error, future, sync::{mpsc::channel, Arc, RwLock, RwLockReadGuard}, vec};
 
 use rand::Rng;
 use threadpool::ThreadPool;
 
 use crate::utils::{ACOConfig, ACOPaths, Ant};
 
-#[cfg(test)]
-mod tests {
-    use std::sync::Arc;
-
-    use crate::utils::{aco, ACOConfig, ACOPaths, MatrixACOPaths};
-
-    // Test functions and helper code go here
-    #[test]
-    fn it_works() {
-        let mut paths: Arc<dyn ACOPaths> = Arc::new(MatrixACOPaths::new(5, None, None));
-        let aco_config = ACOConfig { ants: 2, feromone_weight: 0.5, heuristic_coefficient: 0.5, q: 10., begin_city: 0, target_city: 2, evaporation_coefficient: 0.1 };
-        for i in 0..5 {
-            for j in 0..5 {
-                print!("{:.4} ", paths.get_feromone_intensity(i, j).unwrap())
-            }
-            println!("");
-        }
-        for _ in 0..100 {
-            paths = aco(&aco_config, paths).unwrap();
-            println!("GAY");
-            for i in 0..5 {
-                for j in 0..5 {
-                    print!("{:.4} ", paths.get_feromone_intensity(i, j).unwrap())
-                }
-                println!("");
-            }
-        }
-    }
-}
-
-pub fn aco(config: &ACOConfig, mut paths: Arc<dyn ACOPaths>) -> Result<Arc<dyn ACOPaths>, Box<dyn Error>> {
-    let (tx, rx) = channel::<Ant>();
+pub async fn aco(config: &ACOConfig, paths: & mut Arc<dyn ACOPaths>) -> Result<(), Box<dyn Error>> {
+    let mut handles = Vec::new();
     {
         let field = Arc::new(RwLock::new(paths.clone()));
         
@@ -45,11 +15,11 @@ pub fn aco(config: &ACOConfig, mut paths: Arc<dyn ACOPaths>) -> Result<Arc<dyn A
         let ants_amount = config.ants;
         
         for _worker in 0..ants_amount {
-            let tx = tx.clone();
+            let (tx, rx) = oneshot::channel();
             let field_clone = Arc::clone(&field);
             let config = config.clone();
 
-            pool.execute(move || {
+            let handle = tokio::task::spawn_blocking(move || {
                 let mut rng = rand::rng();
                 let field_read = field_clone.read();
                 let mut ant = Ant::new();
@@ -83,17 +53,23 @@ pub fn aco(config: &ACOConfig, mut paths: Arc<dyn ACOPaths>) -> Result<Arc<dyn A
                     }
                 }
             });
+
+            handles.push((rx, handle));
         }
 
         pool.join();
     }
     {
-        for ant in rx.iter().take(config.ants) {
-            let paths = Arc::get_mut(&mut paths).ok_or("Failed")?;
+        for (rx, handle) in handles {
+            // Waiting for spawn to be completed
+            let _ = handle.await;
 
+            let ant = rx.await.unwrap_or(Ant::new());
             if ant.visited.len() == 0 {
                 continue;
             }
+            
+            let paths = Arc::get_mut(paths).ok_or("Failed")?;
 
             let feromone_added = get_ant_path_feromone(config, paths, &ant);
 
@@ -104,11 +80,11 @@ pub fn aco(config: &ACOConfig, mut paths: Arc<dyn ACOPaths>) -> Result<Arc<dyn A
             }
         }
 
-        let paths = Arc::get_mut(&mut paths).ok_or("Failed")?;
+        let paths = Arc::get_mut(paths).ok_or("Failed")?;
         evaporate(config, paths)?;
     }
 
-    Ok(paths)
+    Ok(())
 }
 
 fn find_next_city(config: &ACOConfig, paths: RwLockReadGuard<'_, Arc<dyn ACOPaths>>, ant: &Ant) -> Result<usize, Box<dyn Error>> {
