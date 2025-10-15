@@ -4,6 +4,7 @@ pub struct ACOConfig {
     pub feromone_weight: f64,
     pub heuristic_coefficient: f64,
     pub q: f64,
+    pub begin_city: Option<usize>,
     pub target_city: usize,
-    pub evaporation_coefficient: f64
+    pub evaporation_coefficient: f64,
 }

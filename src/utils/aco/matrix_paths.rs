@@ -1,6 +1,6 @@
-use std::error::Error;
+use std::{error::Error, ops::Range};
 
-use rand::Rng;
+use rand::{distr::uniform::SampleRange, Rng};
 
 use crate::utils::ACOPaths;
 
@@ -16,6 +16,7 @@ impl Point2 {
     }
 }
 
+#[derive(Clone)]
 pub struct MatrixACOPaths {
     feromone: Vec<Vec<f64>>,
     points: Vec<Point2>,
@@ -26,15 +27,24 @@ const DISTR_X: f64 = 10.;
 const DISTR_Y: f64 = 10.;
 
 impl MatrixACOPaths {
-    pub fn new(points_amount: usize) -> MatrixACOPaths {
+    pub fn new(points_amount: usize, x_range: Option<Range<f64>>, y_range: Option<Range<f64>>) -> MatrixACOPaths {
+        let x_range = x_range.unwrap_or(-DISTR_X..DISTR_X);
+        let y_range = y_range.unwrap_or(-DISTR_Y..DISTR_Y);
+        
         let mut rng = rand::rng();
 
         MatrixACOPaths {             
             feromone: vec![vec![1. / points_amount as f64; points_amount]; points_amount], 
             points: (0..points_amount).step_by(1).into_iter()
-                .map(|_| Point2 {x: rng.random_range(-DISTR_X..DISTR_X), y: rng.random_range(-DISTR_Y..DISTR_Y)}).collect(),
+                .map(|_| Point2 {x: rng.random_range(x_range.clone()), y: rng.random_range(y_range.clone())}).collect(),
             fresh: true
         }
+    }
+
+    pub fn clean_feromone(&mut self) {
+        let points_amount= self.points.len();
+        self.feromone = vec![vec![1. / points_amount as f64; points_amount]; points_amount];
+        self.fresh = true;
     }
 }
 

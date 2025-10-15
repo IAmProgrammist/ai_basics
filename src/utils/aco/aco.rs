@@ -14,8 +14,8 @@ mod tests {
     // Test functions and helper code go here
     #[test]
     fn it_works() {
-        let mut paths: Arc<dyn ACOPaths> = Arc::new(MatrixACOPaths::new(5));
-        let aco_config = ACOConfig { ants: 2, feromone_weight: 0.5, heuristic_coefficient: 0.5, q: 10., target_city: 2, evaporation_coefficient: 0.1 };
+        let mut paths: Arc<dyn ACOPaths> = Arc::new(MatrixACOPaths::new(5, None, None));
+        let aco_config = ACOConfig { ants: 2, feromone_weight: 0.5, heuristic_coefficient: 0.5, q: 10., begin_city: 0, target_city: 2, evaporation_coefficient: 0.1 };
         for i in 0..5 {
             for j in 0..5 {
                 print!("{:.4} ", paths.get_feromone_intensity(i, j).unwrap())
@@ -63,7 +63,7 @@ pub fn aco(config: &ACOConfig, mut paths: Arc<dyn ACOPaths>) -> Result<Arc<dyn A
                 if field_read.is_fresh() {
                     ant.visited.push(rng.random_range(0..config.ants));
                 } else {
-                    ant.visited.push(0);
+                    ant.visited.push(config.begin_city.unwrap_or(0));
                 }
                 loop {
                     let field_read = field_clone.read().unwrap();

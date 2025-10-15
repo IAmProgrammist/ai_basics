@@ -27,3 +27,6 @@ pub use tab_list::*;
 
 mod pagination;
 pub use pagination::*;
+
+mod legend;
+pub use legend::*;
