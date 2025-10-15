@@ -97,6 +97,7 @@ pub fn ACOPage() -> Element {
                 value: "{q}",
                 oninput: move |event| q.set(event.value())
             }
+            /*
             InputLegend {
                 title: "Индекс города-муравейника"
             }
@@ -119,6 +120,7 @@ pub fn ACOPage() -> Element {
                 value: "{target_city}",
                 oninput: move |event| target_city.set(event.value())
             }
+            */
             InputLegend {
                 title: "Скорость симуляции (время между итерациями в мс.)"
             }
