@@ -1,11 +1,14 @@
+use std::f64::INFINITY;
+
 #[derive(Clone, Debug)]
 pub struct Ant {
-    pub visited: Vec<usize>
+    pub visited: Vec<usize>,
+    pub len: f64
 }
 
 impl Ant {
     pub fn new() -> Ant {
-        Ant {visited: vec![0; 0]}
+        Ant {visited: vec![0; 0], len: 0.0}
     }
 }
 

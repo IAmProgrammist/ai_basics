@@ -1,11 +1,11 @@
-use std::{error::Error, future, sync::{mpsc::channel, Arc, RwLock, RwLockReadGuard}, vec};
+use std::{error::Error, f64::INFINITY, future, sync::{mpsc::channel, Arc, RwLock, RwLockReadGuard}, vec};
 
 use rand::Rng;
 use threadpool::ThreadPool;
 
 use crate::utils::{ACOConfig, ACOPaths, Ant};
 
-pub async fn aco(config: &ACOConfig, paths: & mut Arc<dyn ACOPaths>) -> Result<(), Box<dyn Error>> {
+pub async fn aco(config: &ACOConfig, paths: & mut Arc<dyn ACOPaths>) -> Result<Ant, Box<dyn Error>> {
     let mut handles = Vec::new();
     {
         let field = Arc::new(RwLock::new(paths.clone()));
@@ -30,17 +30,19 @@ pub async fn aco(config: &ACOConfig, paths: & mut Arc<dyn ACOPaths>) -> Result<(
 
                 // Если инициализация, ставим в случайную точку. Иначе - в ноль.
                 let field_read = field_read.unwrap();
-                if field_read.is_fresh() {
+                //if field_read.is_fresh() {
                     ant.visited.push(rng.random_range(0..config.ants));
-                } else {
-                    ant.visited.push(config.begin_city.unwrap_or(0));
-                }
+                //} else {
+                //    ant.visited.push(config.begin_city.unwrap_or(0));
+                //}
                 loop {
                     let field_read = field_clone.read().unwrap();
-                    match find_next_city(&config, field_read, &ant) {
+                    match find_next_city(&config, &field_read, &ant) {
                         Ok(city_index) => {
+                            ant.len += field_read.get_distance(ant.visited[ant.visited.len() - 1], city_index).unwrap_or(0.0);
                             ant.visited.push(city_index);
-                            if city_index == config.target_city {
+                            if ant.visited.len() == field_read.len() {
+                                ant.visited.push(ant.visited[0]);
                                 let _ = tx.send(ant);
                                 return;
                             }
@@ -59,6 +61,8 @@ pub async fn aco(config: &ACOConfig, paths: & mut Arc<dyn ACOPaths>) -> Result<(
 
         pool.join();
     }
+    let mut best_ant = Ant::new();
+    best_ant.len = INFINITY;
     {
         for (rx, handle) in handles {
             // Waiting for spawn to be completed
@@ -67,6 +71,10 @@ pub async fn aco(config: &ACOConfig, paths: & mut Arc<dyn ACOPaths>) -> Result<(
             let ant = rx.await.unwrap_or(Ant::new());
             if ant.visited.len() == 0 {
                 continue;
+            }
+
+            if ant.len < best_ant.len {
+                best_ant = ant.clone();
             }
             
             let paths = Arc::get_mut(paths).ok_or("Failed")?;
@@ -84,10 +92,10 @@ pub async fn aco(config: &ACOConfig, paths: & mut Arc<dyn ACOPaths>) -> Result<(
         evaporate(config, paths)?;
     }
 
-    Ok(())
+    Ok(best_ant)
 }
 
-fn find_next_city(config: &ACOConfig, paths: RwLockReadGuard<'_, Arc<dyn ACOPaths>>, ant: &Ant) -> Result<usize, Box<dyn Error>> {
+fn find_next_city(config: &ACOConfig, paths: &RwLockReadGuard<'_, Arc<dyn ACOPaths>>, ant: &Ant) -> Result<usize, Box<dyn Error>> {
     let mut probs = vec![0.; 0];
     let mut indices = vec![0; 0];
     let mut denom: f64 = 0.;

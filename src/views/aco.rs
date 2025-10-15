@@ -2,7 +2,7 @@ use std::{error::Error, ops::Range, sync::Arc, thread::sleep, time::{Duration, I
 
 use dioxus::{prelude::*};
 
-use crate::{components::{GoHome, InputLegend, MatrixDrawer, BUTTON_CLASSES, INPUT_CLASSES}, utils::{aco, parse_range, ACOConfig, ACOPaths, MatrixACOPaths}};
+use crate::{components::{GoHome, InputLegend, MatrixDrawer, BUTTON_CLASSES, INPUT_CLASSES}, utils::{aco, parse_range, ACOConfig, ACOPaths, Ant, MatrixACOPaths}};
 
 #[component]
 pub fn ACOPage() -> Element {
@@ -21,10 +21,16 @@ pub fn ACOPage() -> Element {
     let mut points_amount = use_signal(|| "10".to_string());
     let mut matrix: Signal<MatrixACOPaths> = use_signal(|| MatrixACOPaths::new(10, None, None));
 
-    let mut simulation_threshold = use_signal(|| "500".to_string());
+    let mut simulation_threshold = use_signal(|| "4".to_string());
     let mut simulation_running = use_signal(|| false);
 
+    let mut best_ant = use_signal(|| Ant::new());
+    let mut current_best_ant = use_signal(|| Ant::new());
+
     let mut force_reload = use_signal(|| 0);
+
+    let best_ant_way = best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
+    let current_best_ant_way = current_best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
 
     rsx! {
         div {
@@ -194,6 +200,8 @@ pub fn ACOPage() -> Element {
 
                         matrix.set(MatrixACOPaths::new(points_amount, range_x, range_y));
                         force_reload.set(force_reload.clone() + 1);
+                        current_best_ant.set(Ant::new());
+                        best_ant.set(Ant::new());
 
                         Ok(())
                     };
@@ -282,7 +290,17 @@ pub fn ACOPage() -> Element {
                         
                         while *simulation_running.read() {
                             let start_time = Instant::now();
-                            let _ = aco(&config, &mut edit_matrix_arc).await;
+                            match aco(&config, &mut edit_matrix_arc).await {
+                                Ok(fastest_ant) => {
+                                    current_best_ant.set(fastest_ant.clone());
+                                    if fastest_ant.len < best_ant.read().len || best_ant.read().len == 0.0 {
+                                        best_ant.set(fastest_ant.clone());
+                                    }
+                                },
+                                Err(e) => {
+                                    println!("{}", e)
+                                }
+                            }
 
                             let mut copy_paste_matrix = matrix.read().clone();
                             copy_paste_matrix = copy_paste_matrix.copy_fresh_and_feromone_from_trait(&mut edit_matrix_arc);
@@ -306,7 +324,31 @@ pub fn ACOPage() -> Element {
             }
             MatrixDrawer {
                 matrix: Box::new(matrix.read().clone()),
-                id: force_reload.read().clone()
+                id: force_reload.read().clone(),
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-lg font-semibold",
+                "Лучший муравей"
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-base",
+                "Длина пути: {best_ant.read().len}"
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-base",
+                "Путь: {best_ant_way}"
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-lg font-semibold",
+                "Лучший текущий муравей"
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-base",
+                "Длина пути: {current_best_ant.read().len}"
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-base",
+                "Путь: {current_best_ant_way}"
             }
         }
     }

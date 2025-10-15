@@ -7,7 +7,9 @@ use crate::utils::{ACOConfig, ACOPaths, MatrixACOPaths, Point2};
 #[derive(Props, Clone)]
 pub struct MatrixDrawerProps {
     matrix: Box<MatrixACOPaths>,
-    id: i32
+    id: i32,
+    begin_city: Option<usize>,
+    end_city: Option<usize>
 }
 
 impl PartialEq for MatrixDrawerProps {
@@ -138,16 +140,23 @@ pub fn MatrixDrawer(props: MatrixDrawerProps) -> Element {
                     y1: line.a.y + PADDING as f64,
                     x2: line.b.x + PADDING as f64,
                     y2: line.b.y + PADDING as f64,
-                    stroke: "yellow",
+                    stroke: "brown",
                     stroke_width: line.strength * 3.0
                 }
             }
-            for circle in circles.iter() {
+            for (index, circle) in circles.iter().enumerate() {
                 circle { 
                     cx: circle.cx + PADDING as f64,
                     cy: circle.cy + PADDING as f64,
                     r: RADIUS as f64,
-                    fill: "red"
+                    fill: "rgba(255, {255.0 * index as f64 / circles.len() as f64}, 0, 1)"
+                }
+                text {
+                    x: circle.cx + PADDING as f64,
+                    y: circle.cy + PADDING as f64 + 6.0,
+                    fill: "black",
+                    font_size: "12px",
+                    "{index.to_string()}"
                 }
             }
         }
