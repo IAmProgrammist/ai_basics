@@ -13,7 +13,7 @@ pub struct Point2 {
 
 impl Point2 {
     pub fn dist(&self, other: &Point2) -> f64 {
-        (self.x - other.x).powf(2.) + (self.y - other.y).powf(2.)
+        ((self.x - other.x).powf(2.) + (self.y - other.y).powf(2.)).sqrt()
     }
 }
 
