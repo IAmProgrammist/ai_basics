@@ -33,3 +33,6 @@ pub use legend::*;
 
 mod aco;
 pub use aco::*;
+
+mod backprop;
+pub use backprop::*;

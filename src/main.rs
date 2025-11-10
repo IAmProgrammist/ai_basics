@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_desktop::launch::launch;
 
-use views::{HomePage, SimulatedAnnealingPage, RouteOutlet, ART1Page, ACOPage};
+use views::{HomePage, SimulatedAnnealingPage, RouteOutlet, ART1Page, ACOPage, BackpropPage};
 
 mod components;
 mod views;
@@ -18,7 +18,9 @@ enum Route {
         #[route("/art1")]
         ART1Page,
         #[route("/aco")]
-        ACOPage
+        ACOPage,
+        #[route("/backprop")]
+        BackpropPage
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
