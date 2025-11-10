@@ -116,14 +116,12 @@ pub fn BackpropPage() -> Element {
 
                     // Выполнить предсказание
                     let mut model_clone = model.read().clone();
-                    println!("{:?}", model_clone.actual);
                     let model_element = BackpropElement {
                         data_in: matrix_clone.into_iter().flatten().collect::<Vec<f64>>().as_slice().try_into().unwrap(), 
                         out: [0.; OUTPUT_NEURONS]
                     };
                     model_clone.set_inputs(&model_element);
                     model_clone.feed_forward();
-                    println!("{:?}", model_clone.actual);
                     model.set(model_clone);
                 }
             }
