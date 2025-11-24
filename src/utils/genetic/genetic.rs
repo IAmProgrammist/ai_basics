@@ -226,7 +226,7 @@ pub fn next_generation(species: &Vec<Vec<usize>>, paths: & mut Arc<dyn ACOPaths>
             paths.set_feromone_intensity(1., best_genes[gene_idx], best_genes[gene_idx + 1]);
         }
 
-        paths.set_feromone_intensity(1., 0, *best_genes.last().unwrap());
+        paths.set_feromone_intensity(1., *best_genes.first().unwrap(), *best_genes.last().unwrap());
     }
 
     // Возвращаем поколение думеров
