@@ -32,6 +32,8 @@ pub fn ACOPage() -> Element {
     let best_ant_way = best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
     let current_best_ant_way = current_best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
 
+    let mut iteration_time_ms = use_signal(|| 0 as u128);
+
     rsx! {
         div {
             class: "flex flex-col gap-4",
@@ -310,10 +312,15 @@ pub fn ACOPage() -> Element {
                             force_reload.set(force_reload().clone() + 1);
 
                             let ellapsed = start_time.elapsed();
+                            let ellapsed_micros = ellapsed.as_micros();                
                             let ellapsed = ellapsed.as_millis();
+                            
+                            iteration_time_ms.set(ellapsed_micros);
+
                             if ellapsed > threshold as u128 {
                                 continue;
                             }
+                        
                             let wait_time = threshold as u128 - ellapsed;
                             tokio::time::sleep(Duration::from_millis(wait_time as u64)).await;
                         }
@@ -351,6 +358,10 @@ pub fn ACOPage() -> Element {
             div {
                 class: "text-gray-900 dark:text-white text-base",
                 "Путь: {current_best_ant_way}"
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-base",
+                "Время итерации: {iteration_time_ms.read().clone() as f64 / 1000.} мс."
             }
         }
     }

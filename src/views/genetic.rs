@@ -1,3 +1,4 @@
+use core::f64;
 use std::{error::Error, ops::Range, sync::Arc, thread::sleep, time::{Duration, Instant}};
 
 use dioxus::{prelude::*};
@@ -31,13 +32,8 @@ pub fn GeneticPage() -> Element {
     let mut best_current_len = use_signal(|| 0.);
     let mut best_current_gene = use_signal(|| "".to_string());
 
-    /* 
-    let mut best_ant = use_signal(|| Ant::new());
-    let mut current_best_ant = use_signal(|| Ant::new());
+    let mut iteration_time_ms = use_signal(|| 0 as u128);
 
-    let best_ant_way = best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
-    let current_best_ant_way = current_best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
-*/
     rsx! {
         div {
             class: "flex flex-col gap-4",
@@ -80,6 +76,19 @@ pub fn GeneticPage() -> Element {
                 step: "0.01",
                 value: "{mutation_prob}",
                 oninput: move |event| mutation_prob.set(event.value())
+            }
+            hr { 
+                class: "text-gray-900 dark:text-white"
+            }
+            InputLegend {
+                title: "Скорость симуляции (время между итерациями в мс.)"
+            }
+            input { 
+                class: INPUT_CLASSES, 
+                type: "number",
+                min: "0",
+                value: "{simulation_threshold}",
+                oninput: move |event| simulation_threshold.set(event.value())
             }
             hr { 
                 class: "text-gray-900 dark:text-white"
@@ -153,11 +162,11 @@ pub fn GeneticPage() -> Element {
 
                         matrix.set(MatrixACOPaths::new(points_amount, range_x, range_y));
                         force_reload.set(force_reload.clone() + 1);
-                        /*
-                        current_best_ant.set(Ant::new());
-                        best_ant.set(Ant::new());
-                        */
                         population.set(create_population(points_amount, population_count));
+                        best_len.set(f64::INFINITY);
+                        best_gene.set("".to_string());
+                        best_current_len.set(f64::INFINITY);
+                        best_current_gene.set("".to_string());
 
                         Ok(())
                     };
@@ -185,6 +194,10 @@ pub fn GeneticPage() -> Element {
                         matrix.set(matrix_copy);
                         force_reload.set(force_reload.clone() + 1);
                         population.set(create_population(points_amount, population_count));
+                        best_len.set(f64::INFINITY);
+                        best_gene.set("".to_string());
+                        best_current_len.set(f64::INFINITY);
+                        best_current_gene.set("".to_string());
                         Ok(())
                     };
 
@@ -271,7 +284,10 @@ pub fn GeneticPage() -> Element {
                             force_reload.set(force_reload().clone() + 1);
 
                             let ellapsed = start_time.elapsed();
+                            let ellapsed_micros = ellapsed.as_micros();
                             let ellapsed = ellapsed.as_millis();
+                            
+                            iteration_time_ms.set(ellapsed_micros);
                             if ellapsed > threshold as u128 {
                                 continue;
                             }
@@ -312,6 +328,10 @@ pub fn GeneticPage() -> Element {
             div {
                 class: "text-gray-900 dark:text-white text-base",
                 "Путь: {best_current_gene}"
+            }
+            div {
+                class: "text-gray-900 dark:text-white text-base",
+                "Время итерации: {iteration_time_ms.read().clone() as f64 / 1000.} мс."
             }
         }
     }
