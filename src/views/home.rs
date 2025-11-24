@@ -43,6 +43,14 @@ pub fn HomePage() -> Element {
                     redirect: Route::BackpropPage {  }
                 }
             }
+            div {
+                class: "flex flex-col gap-2",
+                LabCard {
+                    number: 5,
+                    sub_title: "Генетические алгоритмы",
+                    redirect: Route::GeneticPage {  }
+                }
+            }
         }
     }
 }

@@ -25,3 +25,6 @@ pub use aco::*;
 
 mod backprop;
 pub use backprop::*;
+
+mod genetic;
+pub use genetic::*;
