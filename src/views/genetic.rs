@@ -1,18 +1,15 @@
+use core::f64;
 use std::{error::Error, ops::Range, sync::Arc, thread::sleep, time::{Duration, Instant}};
 
 use dioxus::{prelude::*};
 
-use crate::{components::{GoHome, InputLegend, MatrixDrawer, BUTTON_CLASSES, INPUT_CLASSES}, utils::{aco, parse_range, ACOConfig, ACOPaths, Ant, MatrixACOPaths}};
+use crate::{components::{BUTTON_CLASSES, GoHome, INPUT_CLASSES, InputLegend, MatrixDrawer}, utils::{ACOConfig, ACOPaths, Ant, MatrixACOPaths, aco, create_population, next_generation, parse_range}};
 
 #[component]
-pub fn ACOPage() -> Element {
-    let mut ants = use_signal(|| "3".to_string());
-    let mut feromone_weight = use_signal(|| "1".to_string());
-    let mut heuristic_coefficient = use_signal(|| "3.5".to_string());
-    let mut evaporation_coefficient = use_signal(|| "0.2".to_string());
-    let mut q = use_signal(|| "10".to_string());
-    let mut begin_city = use_signal(|| "0".to_string());
-    let mut target_city = use_signal(|| "1".to_string());
+pub fn GeneticPage() -> Element {
+    let mut population_count = use_signal(|| "100".to_string());
+    let mut mating_prob = use_signal(|| "0.5".to_string());
+    let mut mutation_prob = use_signal(|| "0.1".to_string());
 
     let mut range_x_left = use_signal(|| "-10".to_string());
     let mut range_x_right = use_signal(|| "10".to_string());
@@ -24,13 +21,16 @@ pub fn ACOPage() -> Element {
     let mut simulation_threshold = use_signal(|| "4".to_string());
     let mut simulation_running = use_signal(|| false);
 
-    let mut best_ant = use_signal(|| Ant::new());
-    let mut current_best_ant = use_signal(|| Ant::new());
+    let mut population = use_signal(|| create_population(10, 100));
+
 
     let mut force_reload = use_signal(|| 0);
 
-    let best_ant_way = best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
-    let current_best_ant_way = current_best_ant.read().visited.iter().fold(String::new(), |a, b| a + " " + &b.to_string());
+    let mut best_len = use_signal(|| f64::INFINITY);
+    let mut best_gene = use_signal(|| "".to_string());
+
+    let mut best_current_len = use_signal(|| 0.);
+    let mut best_current_gene = use_signal(|| "".to_string());
 
     let mut iteration_time_ms = use_signal(|| 0 as u128);
 
@@ -46,83 +46,40 @@ pub fn ACOPage() -> Element {
                 "Симуляция"
             }
             InputLegend {
-                title: "Количество муравьёв"
+                title: "Размер популяции"
             }
             input { 
                 class: INPUT_CLASSES,
                 type: "number",
                 min: "1",
-                value: "{ants}",
-                oninput: move |event| ants.set(event.value())
+                value: "{population_count}",
+                oninput: move |event| population_count.set(event.value())
             }
             InputLegend {
-                title: "Коэффициент значимости феромона"
+                title: "Шанс скрещивания"
             }
             input { 
                 class: INPUT_CLASSES, 
                 type: "number",
                 min: "0.0",
                 step: "0.01",
-                value: "{feromone_weight}",
-                oninput: move |event| feromone_weight.set(event.value())
+                value: "{mating_prob}",
+                oninput: move |event| mating_prob.set(event.value())
             }
             InputLegend {
-                title: "Коэффициент эвристики"
+                title: "Шанс мутации"
             }
             input { 
                 class: INPUT_CLASSES, 
                 type: "number",
                 min: "0.0",
                 step: "0.01",
-                value: "{heuristic_coefficient}",
-                oninput: move |event| heuristic_coefficient.set(event.value())
+                value: "{mutation_prob}",
+                oninput: move |event| mutation_prob.set(event.value())
             }
-            InputLegend {
-                title: "Коэффициент испарения"
+            hr { 
+                class: "text-gray-900 dark:text-white"
             }
-            input { 
-                class: INPUT_CLASSES, 
-                type: "number",
-                min: "0.0",
-                step: "0.01",
-                value: "{evaporation_coefficient}",
-                oninput: move |event| evaporation_coefficient.set(event.value())
-            }
-            InputLegend {
-                title: "Q"
-            }
-            input { 
-                class: INPUT_CLASSES, 
-                type: "number",
-                min: "0.0",
-                step: "0.01",
-                value: "{q}",
-                oninput: move |event| q.set(event.value())
-            }
-            /*
-            InputLegend {
-                title: "Индекс города-муравейника"
-            }
-            input { 
-                class: INPUT_CLASSES, 
-                type: "number",
-                min: "0",
-                max: points_amount.clone(),
-                value: "{begin_city}",
-                oninput: move |event| begin_city.set(event.value())
-            }
-            InputLegend {
-                title: "Индекс города-назначения"
-            }
-            input { 
-                class: INPUT_CLASSES, 
-                type: "number",
-                min: "0",
-                max: points_amount.clone(),
-                value: "{target_city}",
-                oninput: move |event| target_city.set(event.value())
-            }
-            */
             InputLegend {
                 title: "Скорость симуляции (время между итерациями в мс.)"
             }
@@ -201,11 +158,15 @@ pub fn ACOPage() -> Element {
                         let range_x = parse_range(range_x_left.read().to_string(), range_x_right.read().to_string());
                         let range_y = parse_range(range_y_bottom.read().to_string(), range_y_top.read().to_string());
                         let points_amount = points_amount.read().parse::<usize>()?;
+                        let population_count = population_count.read().parse::<usize>()?;
 
                         matrix.set(MatrixACOPaths::new(points_amount, range_x, range_y));
                         force_reload.set(force_reload.clone() + 1);
-                        current_best_ant.set(Ant::new());
-                        best_ant.set(Ant::new());
+                        population.set(create_population(points_amount, population_count));
+                        best_len.set(f64::INFINITY);
+                        best_gene.set("".to_string());
+                        best_current_len.set(f64::INFINITY);
+                        best_current_gene.set("".to_string());
 
                         Ok(())
                     };
@@ -225,10 +186,18 @@ pub fn ACOPage() -> Element {
                     }
 
                     let mut inner = move || -> Result<(), Box<dyn Error>> {
+                        let points_amount = points_amount.read().parse::<usize>()?;
+                        let population_count = population_count.read().parse::<usize>()?;
+
                         let mut matrix_copy = matrix.read().clone();
                         matrix_copy.clean_feromone();
                         matrix.set(matrix_copy);
                         force_reload.set(force_reload.clone() + 1);
+                        population.set(create_population(points_amount, population_count));
+                        best_len.set(f64::INFINITY);
+                        best_gene.set("".to_string());
+                        best_current_len.set(f64::INFINITY);
+                        best_current_gene.set("".to_string());
                         Ok(())
                     };
 
@@ -237,38 +206,40 @@ pub fn ACOPage() -> Element {
                         Err(e) => println!("{}", e)
                     }
                 },
-                "Очистить феромон"
+                "Сбросить популяцию"
             }
             
             button {
                 class: BUTTON_CLASSES,
                 onclick: move |_| {
                     let mut threshold_arg: Option<usize> = None;
-                    let mut config_arg: Option<ACOConfig> = None;
+                    let mut mating_prob_arg: f64 = 1.;
+                    let mut mutation_prob_arg: f64 = 1.;
+                    let mut population_size_arg: usize = 100;
                     let mut should_run = false;
 
                     if !*simulation_running.read() {
-                        let mut parser = move || -> Result<(ACOConfig, usize), Box<dyn Error>> { 
-                            let ants = ants.read().parse::<usize>()?;
-                            let feromone_weight = feromone_weight.read().parse::<f64>()?;
-                            let heuristic_coefficient = heuristic_coefficient.read().parse::<f64>()?;
-                            let evaporation_coefficient = evaporation_coefficient.read().parse::<f64>()?;
-                            let q = q.read().parse::<f64>()?;
-                            let begin_city = begin_city.read().parse::<usize>()?;
-                            let target_city = target_city.read().parse::<usize>()?;
+                        let parser = move || -> Result<(f64, f64, usize, usize), Box<dyn Error>> { 
+                            let mating_prob = mating_prob.read().parse::<f64>()?;
+                            let mutation_prob = mutation_prob.read().parse::<f64>()?;
+                            let population_size = population_count.read().parse::<usize>()?;
 
                             let threshold = simulation_threshold.read().parse::<usize>()?;
 
                             Ok((
-                                ACOConfig {ants, feromone_weight, heuristic_coefficient, q, begin_city: Some(begin_city), target_city, evaporation_coefficient},
+                                mating_prob,
+                                mutation_prob,
+                                population_size,
                                 threshold
                             ))
                         };
 
                         match parser() {
-                            Ok((config, threshold)) => {
+                            Ok((mating_prob, mutation_prob, population_size, threshold)) => {
                                 threshold_arg = Some(threshold);
-                                config_arg = Some(config);
+                                mating_prob_arg = mating_prob;
+                                mutation_prob_arg = mutation_prob;
+                                population_size_arg = population_size;
                                 should_run = true;
                             },
                             Err(e) => {
@@ -285,7 +256,6 @@ pub fn ACOPage() -> Element {
                         }
 
                         let threshold = threshold_arg.unwrap();
-                        let config = config_arg.unwrap();
 
                         simulation_running.set(true);
 
@@ -293,17 +263,19 @@ pub fn ACOPage() -> Element {
                         let mut edit_matrix_arc: Arc<dyn ACOPaths> = Arc::new(edit_matrix);
                         
                         while *simulation_running.read() {
+                            let species = population.read().clone();
                             let start_time = Instant::now();
-                            match aco(&config, &mut edit_matrix_arc).await {
-                                Ok(fastest_ant) => {
-                                    current_best_ant.set(fastest_ant.clone());
-                                    if fastest_ant.len < best_ant.read().len || best_ant.read().len == 0.0 {
-                                        best_ant.set(fastest_ant.clone());
-                                    }
-                                },
-                                Err(e) => {
-                                    println!("{}", e)
-                                }
+
+                            let species_next = next_generation(&species, &mut edit_matrix_arc, mating_prob_arg, mutation_prob_arg, population_size_arg);
+
+                            population.set(species_next.species);
+
+                            best_current_len.set(species_next.best_len);
+                            best_current_gene.set(species_next.best_genes.clone().iter().fold(String::new(), |a, b| a + " " + &b.to_string()));
+
+                            if species_next.best_len < *best_len.read() {
+                                best_len.set(species_next.best_len);
+                                best_gene.set(species_next.best_genes.clone().iter().fold(String::new(), |a, b| a + " " + &b.to_string()));
                             }
 
                             let mut copy_paste_matrix = matrix.read().clone();
@@ -312,15 +284,13 @@ pub fn ACOPage() -> Element {
                             force_reload.set(force_reload().clone() + 1);
 
                             let ellapsed = start_time.elapsed();
-                            let ellapsed_micros = ellapsed.as_micros();                
+                            let ellapsed_micros = ellapsed.as_micros();
                             let ellapsed = ellapsed.as_millis();
                             
                             iteration_time_ms.set(ellapsed_micros);
-
                             if ellapsed > threshold as u128 {
                                 continue;
                             }
-                        
                             let wait_time = threshold as u128 - ellapsed;
                             tokio::time::sleep(Duration::from_millis(wait_time as u64)).await;
                         }
@@ -337,27 +307,27 @@ pub fn ACOPage() -> Element {
             }
             div {
                 class: "text-gray-900 dark:text-white text-lg font-semibold",
-                "Лучший муравей"
+                "Лучший ген"
             }
             div {
                 class: "text-gray-900 dark:text-white text-base",
-                "Длина пути: {best_ant.read().len}"
+                "Длина пути: {best_len}"
             }
             div {
                 class: "text-gray-900 dark:text-white text-base",
-                "Путь: {best_ant_way}"
+                "Путь: {best_gene}"
             }
             div {
                 class: "text-gray-900 dark:text-white text-lg font-semibold",
-                "Лучший текущий муравей"
+                "Лучший текущий ген"
             }
             div {
                 class: "text-gray-900 dark:text-white text-base",
-                "Длина пути: {current_best_ant.read().len}"
+                "Длина пути: {best_current_len}"
             }
             div {
                 class: "text-gray-900 dark:text-white text-base",
-                "Путь: {current_best_ant_way}"
+                "Путь: {best_current_gene}"
             }
             div {
                 class: "text-gray-900 dark:text-white text-base",

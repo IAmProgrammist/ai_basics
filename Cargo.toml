@@ -21,8 +21,6 @@ default = ["desktop"]
 # The feature that are only required for the desktop = ["dioxus/desktop"] build target should be optional and only enabled in the desktop = ["dioxus/desktop"] feature
 desktop = ["dioxus/desktop"]
 
-[profile]
-
 [profile.wasm-dev]
 inherits = "dev"
 opt-level = 1
